@@ -10,6 +10,18 @@ import urllib.parse
 import time
 import random
 
+import logging
+import os
+
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    filename="logs/app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 
 BASE_URL = "https://www.amazon.in/s"
 
@@ -47,7 +59,7 @@ def scrape_amazon_search(query):
 
     try:
         url = f"{BASE_URL}?k={query.replace(' ', '+')}&ref=nb_sb_noss"
-        print(f"Opening: {url}")
+        logger.info(f"Opening: {url}")
         driver.get(url)
 
         # Wait for search results to load
@@ -61,12 +73,12 @@ def scrape_amazon_search(query):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
 
-        print("Status: 200 (page loaded)")
+        logger.info("Status: 200 (page loaded)")
 
         page_source = driver.page_source
 
     except Exception as e:
-        print(f"Page load failed: {e}")
+        logger.info(f"Page load failed: {e}")
         return []
 
     finally:
@@ -77,7 +89,7 @@ def scrape_amazon_search(query):
     products = []
     results = soup.find_all("div", {"data-component-type": "s-search-result"})
 
-    print(f"Found {len(results)} result divs")
+    logger.info(f"Found {len(results)} result divs")
 
     for item in results:
         try:
@@ -177,14 +189,14 @@ if __name__ == "__main__":
     all_products = []
 
     for q in queries:
-        print(f"\n{'='*50}")
-        print(f"Scraping: {q}")
-        print('='*50)
+        logger.info(f"\n{'='*50}")
+        logger.info(f"Scraping: {q}")
+        logger.info('='*50)
         results = scrape_amazon_search(q)
         all_products.extend(results)
-        print(f"Got {len(results)} products")
+        logger.info(f"Got {len(results)} products")
 
-    print(f"\n\nTotal collected: {len(all_products)}")
+    logger.info(f"\n\nTotal collected: {len(all_products)}")
 
     # Deduplicate using (name, price) as key
     seen = {}
@@ -194,7 +206,7 @@ if __name__ == "__main__":
             seen[key] = p
 
     final_data = list(seen.values())
-    print(f"After dedup: {len(final_data)}")
+    logger.info(f"After dedup: {len(final_data)}")
 
     import pandas as pd
     import os
@@ -204,4 +216,4 @@ if __name__ == "__main__":
     df = pd.DataFrame(final_data)
     df.to_csv("data/amazon_raw.csv", index=False)
     
-    print(f"\nSaved amazon_raw.csv with {len(final_data)} rows")
+    logger.info(f"\nSaved amazon_raw.csv with {len(final_data)} rows")

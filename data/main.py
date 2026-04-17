@@ -19,6 +19,18 @@ if PROJECT_ROOT not in sys.path:
 from scraper.search_scraper import scrape_entisi          # Stage 1
 from scraper.product_scraper import scrape_product_details  # Stage 2
 
+import logging
+import os
+
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    filename="logs/app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 # ── Config ────────────────────────────────────────────────────────────────────
 MAX_PRODUCTS   = 20          # MVP limit
 REQUEST_DELAY  = 0.6         # seconds between detail requests (polite crawl)
@@ -32,7 +44,7 @@ def _progress(current: int, total: int, name: str) -> None:
     bar_len = 30
     filled  = int(bar_len * current / total)
     bar     = "#" * filled + "-" * (bar_len - filled)
-    print(f"  [{bar}] {current}/{total}  {name[:50]}", flush=True)
+    logger.info(f"  [{bar}] {current}/{total}  {name[:50]}")
 
 
 def _merge(search_item: dict, detail: dict) -> dict:
@@ -53,19 +65,19 @@ def save_csv(rows: list[dict], path: str) -> None:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
         writer.writeheader()
         writer.writerows(rows)
-    print(f"\n[OK] Saved {len(rows)} rows -> {path}")
+    logger.info(f"\n[OK] Saved {len(rows)} rows -> {path}")
 
 
 # ── Main pipeline ─────────────────────────────────────────────────────────────
 def run_pipeline() -> list[dict]:
     # ── Stage 1: search ───────────────────────────────────────────────────────
-    print("\n=== Stage 1: Fetching product list from entisi.com ===")
+    logger.info("\n=== Stage 1: Fetching product list from entisi.com ===")
     all_products = scrape_entisi()                        # returns list[dict]
     products     = all_products[:MAX_PRODUCTS]
-    print(f"    Found {len(all_products)} products, capping at {len(products)}.")
+    logger.info(f"    Found {len(all_products)} products, capping at {len(products)}.")
 
     # ── Stage 2 + 3: detail scrape → merge ───────────────────────────────────
-    print(f"\n=== Stage 2: Scraping product details ({len(products)} URLs) ===")
+    logger.info(f"\n=== Stage 2: Scraping product details ({len(products)} URLs) ===")
     results: list[dict] = []
     failed:  list[str]  = []
 
@@ -79,22 +91,22 @@ def run_pipeline() -> list[dict]:
             merged  = _merge(item, detail)
             results.append(merged)
         except Exception as exc:
-            print(f"  [SKIP] {url}  ->  {exc}")
+            logger.info(f"  [SKIP] {url}  ->  {exc}")
             failed.append(url)
             time.sleep(REQUEST_DELAY)   # still wait before next request
 
     # ── Stage 4: save CSV ─────────────────────────────────────────────────────
-    print("\n=== Stage 3: Saving results ===")
+    logger.info("\n=== Stage 3: Saving results ===")
     save_csv(results, OUTPUT_CSV)
 
     # ── Summary ───────────────────────────────────────────────────────────────
-    print(f"\n--- Pipeline complete ---")
-    print(f"  Scraped : {len(results)}")
-    print(f"  Skipped : {len(failed)}")
+    logger.info(f"\n--- Pipeline complete ---")
+    logger.info(f"  Scraped : {len(results)}")
+    logger.info(f"  Skipped : {len(failed)}")
     if failed:
-        print("  Failed URLs:")
+        logger.info("  Failed URLs:")
         for u in failed:
-            print(f"    - {u}")
+            logger.info(f"    - {u}")
 
     return results
 
@@ -103,9 +115,9 @@ if __name__ == "__main__":
     data = run_pipeline()
 
     # Quick preview of first 3 rows
-    print("\n--- Preview (first 3 rows) ---")
+    logger.info("\n--- Preview (first 3 rows) ---")
     for row in data[:3]:
-        print()
+        logger.info()
         for k, v in row.items():
             val = str(v or "")
-            print(f"  {k:<14}: {val[:100]}")
+            logger.info(f"  {k:<14}: {val[:100]}")

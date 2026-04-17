@@ -4,6 +4,18 @@ import re
 import json
 import time
 
+import logging
+import os
+
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    filename="logs/app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -216,13 +228,13 @@ if __name__ == "__main__":
     ]
 
     for url in TEST_URLS:
-        print(f"\n{'-' * 62}")
-        print(f"URL        : {url}")
+        logger.info(f"\n{'-' * 62}")
+        logger.info(f"URL        : {url}")
         d = scrape_product_details(url)
-        print(f"Name       : {d['name']}")
-        print(f"Weight (g) : {d['weight_g']}")
-        print(f"Ingredients: {d['ingredients']}")
+        logger.info(f"Name       : {d['name']}")
+        logger.info(f"Weight (g) : {d['weight_g']}")
+        logger.info(f"Ingredients: {d['ingredients']}")
         desc = d["description"]
         snippet = (desc[:220] + "…") if desc and len(desc) > 220 else desc
-        print(f"Description: {snippet}")
-        print(f"Source     : {d['source']}")
+        logger.info(f"Description: {snippet}")
+        logger.info(f"Source     : {d['source']}")

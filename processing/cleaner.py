@@ -1,5 +1,17 @@
 import pandas as pd
 
+import logging
+import os
+
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    filename="logs/app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 
 def clean_text(text):
     if pd.isna(text):
@@ -41,8 +53,8 @@ def clean_data(input_path="data/raw.csv", output_path="data/clean.csv"):
     # Save clean data
     df.to_csv(output_path, index=False)
 
-    print("Cleaned data saved to:", output_path)
-    print(df.head())
+    logger.info(f"Cleaned data saved to: {output_path}")
+    logger.info(df.head())
 
     return df
 

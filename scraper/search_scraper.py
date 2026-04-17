@@ -2,6 +2,18 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+import logging
+import os
+
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    filename="logs/app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 BASE_URL = "https://entisi.com"
 
 HEADERS = {
@@ -13,7 +25,7 @@ def scrape_entisi():
     url = f"{BASE_URL}/collections/all"
 
     response = requests.get(url, headers=HEADERS)
-    print("Status:", response.status_code)
+    logger.info(f"Status: {response.status_code}")
 
     soup = BeautifulSoup(response.text, "html.parser")
 
@@ -21,7 +33,7 @@ def scrape_entisi():
 
     items = soup.find_all("div", class_="product-card-info")
 
-    print("Items found:", len(items))
+    logger.info(f"Items found: {len(items)}")
 
     for item in items:
         try:
@@ -54,8 +66,8 @@ def scrape_entisi():
 if __name__ == "__main__":
     data = scrape_entisi()
 
-    print("\n--- SAMPLE ---\n")
+    logger.info("\n--- SAMPLE ---\n")
     for d in data[:5]:
-        print(d)
+        logger.info(d)
 
-    print("\nTotal:", len(data))
+    logger.info(f"\nTotal: {len(data)}")

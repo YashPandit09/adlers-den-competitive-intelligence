@@ -2,16 +2,28 @@ import pandas as pd
 import numpy as np
 import google.genai as genai
 
+import logging
+import os
+
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    filename="logs/app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
 GEMINI_API_KEY = "AQ.Ab8RN6KHhQTpoL4ekNPEVR2_7f_R3xZtlzkggnxQ6kUFi6QLmQ"
 
 
 def analyze_data():
     df = pd.read_csv("data/clean.csv")
 
-    print("\n--- BASIC STATS ---")
-    print("Total products:", len(df))
-    print("Price range:", df["price"].min(), "-", df["price"].max())
-    print("Average price:", round(df["price"].mean(), 2))
+    logger.info("\n--- BASIC STATS ---")
+    logger.info(f"Total products: {len(df)}")
+    logger.info(f"Price range: {df['price'].min()} - {df['price'].max()}")
+    logger.info(f"Average price: {round(df['price'].mean(), 2)}")
 
     # Price buckets
     bins = [0, 3000, 6000, 10000, 20000]
@@ -19,19 +31,19 @@ def analyze_data():
 
     df["price_category"] = pd.cut(df["price"], bins=bins, labels=labels)
 
-    print("\n--- PRICE DISTRIBUTION ---")
-    print(df["price_category"].value_counts())
+    logger.info("\n--- PRICE DISTRIBUTION ---")
+    logger.info(df["price_category"].value_counts())
 
     # Popularity score (mock for now since no reviews)
     df["score"] = df["price"] / df["weight_g"]
 
-    print("\n--- TOP PRODUCTS (VALUE) ---")
-    print(df.sort_values(by="score", ascending=False)[["name", "price", "weight_g"]].head(5))
+    logger.info("\n--- TOP PRODUCTS (VALUE) ---")
+    logger.info(df.sort_values(by="score", ascending=False)[["name", "price", "weight_g"]].head(5))
 
-    print("\n--- PRICE PER GRAM ---")
+    logger.info("\n--- PRICE PER GRAM ---")
     df["price_per_gram"] = df["price"] / df["weight_g"]
     df = df[df["price_per_gram"].notna()]
-    print("Average:", round(df["price_per_gram"].mean(), 2))
+    logger.info(f"{"Average:", round(df["price_per_gram"].mean(), 2))
 
     return df
 
@@ -63,38 +75,38 @@ Keep each insight to 1-2 sentences."""
             model="gemini-2.0-flash",
             contents=prompt,
         )
-        print("\n--- AI GENERATED INSIGHTS ---\n")
-        print(response.text)
+        logger.info("\n--- AI GENERATED INSIGHTS ---\n")
+        logger.info(response.text)
     except Exception as e:
-        print(f"\n[AI Insights skipped] {e}")
+        logger.info(f"\n[AI Insights skipped] {e}")
 
 def generate_recommendations(df):
     avg_price = df["price"].mean()
 
-    print("\n--- RECOMMENDATIONS ---\n")
+    logger.info("\n--- RECOMMENDATIONS ---\n")
 
     if avg_price < 3000:
-        print("- Introduce products in Rs.1500-Rs.2500 range to target high-demand segment")
+        logger.info("- Introduce products in Rs.1500-Rs.2500 range to target high-demand segment")
 
     best_value = df.sort_values(by="price_per_gram").head(3)
-    print("- Best value products (lowest Rs./g):")
+    logger.info("- Best value products (lowest Rs./g):")
     for _, row in best_value.iterrows():
-        print(f"    {row['name']} : Rs.{round(row['price_per_gram'], 2)}/g")
+        logger.info(f"    {row['name']} : Rs.{round(row['price_per_gram'], 2)}/g")
 
-    print("- Focus on products with price per gram around Rs.7-Rs.10 for competitive positioning")
+    logger.info("- Focus on products with price per gram around Rs.7-Rs.10 for competitive positioning")
 
-    print("- Consider launching premium hampers (>Rs.6000) due to low competition")
+    logger.info("- Consider launching premium hampers (>Rs.6000) due to low competition")
 
 def value_analysis(df):
     df["price_per_gram"] = df["price"] / df["weight_g"]
 
-    print("\n--- VALUE INSIGHTS ---\n")
+    logger.info("\n--- VALUE INSIGHTS ---\n")
 
-    print("Cheapest products (best value):")
-    print(df.sort_values(by="price_per_gram")[["name", "price_per_gram"]].head(3))
+    logger.info("Cheapest products (best value):")
+    logger.info(f"{df.sort_values(by="price_per_gram")[["name", "price_per_gram"]].head(3))
 
-    print("\nMost expensive per gram (premium):")
-    print(df.sort_values(by="price_per_gram", ascending=False)[["name", "price_per_gram"]].head(3))
+    logger.info("\nMost expensive per gram (premium):")
+    logger.info(f"{df.sort_values(by="price_per_gram", ascending=False)[["name", "price_per_gram"]].head(3))
 
 
 
