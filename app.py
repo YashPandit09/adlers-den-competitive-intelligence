@@ -54,7 +54,8 @@ if df.empty:
     st.stop()
 
 # ── Live Datestamp & Refresh ──────────────────────────────────────────────────
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+IST = timezone(timedelta(hours=5, minutes=30))
 db_path = os.path.join(BASE_DIR, "data", "products.db")
 
 if "refresh_running" not in st.session_state:
@@ -63,9 +64,9 @@ if "refresh_running" not in st.session_state:
 col1, col2 = st.columns([5, 1])
 
 if os.path.exists(db_path):
-    ts = datetime.fromtimestamp(os.path.getmtime(db_path))
+    ts = datetime.fromtimestamp(os.path.getmtime(db_path), tz=IST)
     with col1:
-        st.caption(f"📅 Last DB write: {ts.strftime('%d %b %Y, %I:%M %p')}")
+        st.caption(f"📅 Last DB write: {ts.strftime('%d %b %Y, %I:%M %p')} IST")
         if "last_refresh_status" in st.session_state:
             st.caption(f"🔄 Last manual sync: {st.session_state.last_refresh_status}")
 
@@ -77,7 +78,7 @@ with col2:
                 import run_pipeline
                 run_pipeline.run_all()
             st.cache_data.clear()
-            st.session_state.last_refresh_status = datetime.now().strftime("%d %b %Y, %I:%M %p")
+            st.session_state.last_refresh_status = datetime.now(IST).strftime("%d %b %Y, %I:%M %p") + " IST"
             # We must unlock before rerun, otherwise next loaded UI will display a locked button
             st.session_state.refresh_running = False
             st.rerun()
