@@ -53,12 +53,39 @@ if df.empty:
     st.warning("No data available. Please manually run `python run_pipeline.py`.")
     st.stop()
 
-# ── Live Datestamp ───────────────────────────────────────────────────────────
+# ── Live Datestamp & Refresh ──────────────────────────────────────────────────
 from datetime import datetime
 db_path = os.path.join(BASE_DIR, "data", "products.db")
+
+if "refresh_running" not in st.session_state:
+    st.session_state.refresh_running = False
+
+col1, col2 = st.columns([5, 1])
+
 if os.path.exists(db_path):
     ts = datetime.fromtimestamp(os.path.getmtime(db_path))
-    st.caption(f"📅 Last updated: {ts.strftime('%d %b %Y, %I:%M %p')}")
+    with col1:
+        st.caption(f"📅 Last DB write: {ts.strftime('%d %b %Y, %I:%M %p')}")
+        if "last_refresh_status" in st.session_state:
+            st.caption(f"🔄 Last manual sync: {st.session_state.last_refresh_status}")
+
+with col2:
+    if st.button("🔄 Refresh Data", use_container_width=True, disabled=st.session_state.refresh_running):
+        st.session_state.refresh_running = True
+        try:
+            with st.spinner("Updating data..."):
+                import run_pipeline
+                run_pipeline.run_all()
+            st.cache_data.clear()
+            st.session_state.last_refresh_status = datetime.now().strftime("%d %b %Y, %I:%M %p")
+            # We must unlock before rerun, otherwise next loaded UI will display a locked button
+            st.session_state.refresh_running = False
+            st.rerun()
+        except Exception as e:
+            st.error(f"Update failed: {e}")
+            st.session_state.refresh_running = False
+            
+    st.caption("Fetch latest market data (on-demand compute)")
 
 # ── Sidebar Filters ──────────────────────────────────────────────────────────
 with st.sidebar:
