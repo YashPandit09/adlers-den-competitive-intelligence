@@ -76,7 +76,10 @@ def generate_recommendations(df):
     if avg_price < 3000:
         print("- Introduce products in Rs.1500-Rs.2500 range to target high-demand segment")
 
-    df.sort_values(by="price_per_gram").head(3)
+    best_value = df.sort_values(by="price_per_gram").head(3)
+    print("- Best value products (lowest Rs./g):")
+    for _, row in best_value.iterrows():
+        print(f"    {row['name']} : Rs.{round(row['price_per_gram'], 2)}/g")
 
     print("- Focus on products with price per gram around Rs.7-Rs.10 for competitive positioning")
 
@@ -93,16 +96,6 @@ def value_analysis(df):
     print("\nMost expensive per gram (premium):")
     print(df.sort_values(by="price_per_gram", ascending=False)[["name", "price_per_gram"]].head(3))
 
-def price_distribution(df):
-    bins = [0, 3000, 6000, 10000, 20000]
-    labels = ["Low", "Mid", "Premium", "Luxury"]
-
-    df["price_category"] = pd.cut(df["price"], bins=bins, labels=labels)
-
-    print("\n--- PRICE DISTRIBUTION ---")
-    print(df["price_category"].value_counts())
-
-    # Optional: plot this later
 
 
 if __name__ == "__main__":
@@ -110,4 +103,3 @@ if __name__ == "__main__":
     generate_ai_insights(df)
     generate_recommendations(df)
     value_analysis(df)
-    price_distribution(df)
